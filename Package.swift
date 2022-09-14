@@ -9,10 +9,13 @@ let package = Package(
             name: "Select",
             targets: ["Select"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/JochenBe/Terminal", branch: "main")
+    ],
     targets: [
         .target(
             name: "Select",
-            dependencies: []),
+            dependencies: ["Terminal"]),
         .testTarget(
             name: "SelectTests",
             dependencies: ["Select"]),
