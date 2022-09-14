@@ -1,6 +1,8 @@
-public struct Select {
-    public private(set) var text = "Hello, World!"
+//
+//  Select.swift
+//  Select
+//
+//  Created by Jochen Bernard on 14/09/2022.
+//
 
-    public init() {
-    }
-}
+public final class Select {}
