@@ -7,15 +7,16 @@
 
 import Terminal
 
-public func select<T>(options: [T]) -> T? {
+public func select<T>(options: [T], allowEscape: Bool = true) -> T? {
     let termios = Mode.get()
 
-    LocalMode.icanon.unset()
-    LocalMode.echo.unset()
+    Mode.unset(localModes: [.icanon, .echo])
 
     var index = 0
-    while let arrowKey = readArrowKey() {
-        switch arrowKey {
+    print(index)
+
+wh: while let key = readKey() {
+        switch key {
         case .up:
             guard index > 0 else {
                 continue
@@ -28,6 +29,13 @@ public func select<T>(options: [T]) -> T? {
             }
 
             index += 1
+        case .escape:
+            if allowEscape {
+                index = -1
+                break wh
+            } else {
+                continue
+            }
         }
         
         print(index)
@@ -37,5 +45,5 @@ public func select<T>(options: [T]) -> T? {
         Mode.set(termios: termios)
     }
 
-    return nil
+    return index >= 0 ? options[index] : nil
 }
