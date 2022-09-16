@@ -7,6 +7,11 @@
 
 import Terminal
 
+let signals: [Signal] = [
+    .INT,
+    .TERM
+]
+
 public func select<T>(
     options: [T],
     selectedPrefix: String = "> ",
@@ -17,18 +22,16 @@ public func select<T>(
     allowEscape: Bool = true
 ) -> T? {
     guard options.count > 1 else {
-        if options.count == 0 {
-            return nil
-        } else {
+        if options.count == 1 {
             return options.first!
+        } else {
+            return nil
         }
     }
 
     let termios = Mode.get()
-
     Mode.unset(localModes: [.icanon, .echo])
-
-    Signal.trap([.INT]) { _ in
+    Signal.trap(signals) { _ in
         write("\n")
         Cursor.unhide()
         exit(0)
@@ -36,65 +39,52 @@ public func select<T>(
 
     Cursor.hide()
 
-    var index = 0
-    print(
-        options: options,
+    var selectedIndex = 0
+    let output = SelectOutput(
+        options: options.map({ String(describing: $0) }),
+        selectedIndex: selectedIndex,
         selectedPrefix: selectedPrefix,
         unselectedPrefix: unselectedPrefix,
         selectedRendition: selectedRendition,
-        unselectedRendition: unselectedRendition,
-        index: index
+        unselectedRendition: unselectedRendition
     )
-    
+
 wh: while let key = readKey() {
         switch key {
         case .up:
-            guard index > 0 else {
+            guard selectedIndex > 0 else {
                 continue
             }
 
-            index -= 1
+            selectedIndex -= 1
         case .down:
-            guard index < options.count - 1 else {
+            guard selectedIndex < options.count - 1 else {
                 continue
             }
 
-            index += 1
+            selectedIndex += 1
         case .escape:
             if allowEscape {
-                index = -1
+                selectedIndex = -1
                 break wh
             } else {
                 continue
             }
         }
 
-        Cursor.moveTo(column: 1)
-        Cursor.moveUp(cells: UInt(options.count - 1))
-        Window.clear(.fromCursor)
-
-        print(
-            options: options,
-            selectedPrefix: selectedPrefix,
-            unselectedPrefix: unselectedPrefix,
-            selectedRendition: selectedRendition,
-            unselectedRendition: unselectedRendition,
-            index: index
-        )
+        output.update(selectedIndex: selectedIndex)
     }
 
     if cleanup {
-        Cursor.moveTo(column: 1)
-        Cursor.moveUp(cells: UInt(options.count - 1))
-        Window.clear(.fromCursor)
+        output.clear()
     }
 
     Cursor.unhide()
-    Signal.untrap([.INT])
+    Signal.untrap(signals)
 
     if let termios = termios {
         Mode.set(termios: termios)
     }
 
-    return index >= 0 ? options[index] : nil
+    return selectedIndex >= 0 ? options[selectedIndex] : nil
 }
