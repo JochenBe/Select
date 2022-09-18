@@ -21,6 +21,10 @@ public func select<T>(
     cleanup: Bool = true,
     allowEscape: Bool = true
 ) -> T? {
+    if Cursor.getPosition()?.column != 1 {
+        Terminal.write("\n")
+    }
+
     guard options.count > 1 else {
         if options.count == 1 {
             return options.first!
@@ -49,6 +53,8 @@ public func select<T>(
         unselectedRendition: unselectedRendition
     )
 
+    Window.delegate = output
+
 wh: while let key = readKey() {
         switch key {
         case .up:
@@ -74,6 +80,8 @@ wh: while let key = readKey() {
 
         output.update(selectedIndex: selectedIndex)
     }
+
+    Window.delegate = nil
 
     if cleanup {
         output.clear()
